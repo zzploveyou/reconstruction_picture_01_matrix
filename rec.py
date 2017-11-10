@@ -2,6 +2,7 @@
 import cv2
 import numpy as np
 
+THRESHOLD = 0.5
 
 def getres(data):
     """
@@ -22,10 +23,11 @@ def getres(data):
         residual part.
 
     """
+    global THRESHOLD
     w, h = data.shape
     data1_zero_one = np.zeros((w, h))
     for (idx, idy), d in np.ndenumerate(data):
-        if d >= 0.5:
+        if d >= THRESHOLD:
             data1_zero_one[idx, idy] = 1
     res = data - data1_zero_one
     return data1_zero_one, res
@@ -89,13 +91,12 @@ def recmatrix(data, TICK):
 def main():
     data = np.loadtxt("greydata.txt", delimiter=",")
     data01, resdata = getres(data / 255)
-    cv2.imwrite("./pic/grey.png", data)
-    cv2.imwrite("./pic/zero-one.png", data01 * 255)
-    cv2.imwrite("./pic/residualdata.png", resdata * 255)
+    # cv2.imwrite("./pic/grey.png", data)
+    # cv2.imwrite("./pic/zero-one.png", data01 * 255)
+    # cv2.imwrite("./pic/residualdata.png", resdata * 255)
     for TICK in range(8):
         newdata = recmatrix(resdata, TICK=TICK)
-        print "误差最大是: {}".format(np.max(np.abs(newdata - resdata)))
+        # print "误差最大是: {}".format(np.max(np.abs(newdata - resdata)))
         cv2.imwrite("./pic/{}_rec.png".format(TICK), (newdata + data01) * 255)
-
 if __name__ == '__main__':
     main()
