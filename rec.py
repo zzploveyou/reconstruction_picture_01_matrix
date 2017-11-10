@@ -98,5 +98,6 @@ def main():
         newdata = recmatrix(resdata, TICK=TICK)
         # print "误差最大是: {}".format(np.max(np.abs(newdata - resdata)))
         cv2.imwrite("./pic/{}_rec.png".format(TICK), (newdata + data01) * 255)
+        cv2.imwrite("./pic/{}_diff.png".format(TICK), (newdata + data01) * 255 - data)
 if __name__ == '__main__':
     main()
