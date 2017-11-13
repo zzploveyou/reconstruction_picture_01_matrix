@@ -64,7 +64,6 @@ def splitdata(data):
     data2_zero_one, data2_res = getres(data2)
     return data1_zero_one, data2_zero_one, data1_res - data2_res
 
-
 def recmatrix(data, TICK):
     """将矩阵分解为一系列01矩阵，并通过01矩阵的加权和恢复原始矩阵"""
     w, h = data.shape
@@ -76,16 +75,18 @@ def recmatrix(data, TICK):
         z1, z2, r = splitdata(r)
         Aks.append(z1)
         Aks.append(z2)
+
         tick += 1
     for idx in range(len(Aks)):
         if idx % 2 == 0:
             p = (1.0 / 2**(idx / 2 + 1))
             B = Aks[idx] - Aks[idx+1]
             newdata += p * B
+            print(B.min())
             yield p, B, newdata
 
-def main():
-    data = np.loadtxt("greydata.txt", delimiter=",")
+def main0():
+    data = np.loadtxt("greydata.txt", delimiter=",", dtype=np.int8)
     data01, resdata = getres(data / 255)
     # cv2.imwrite("./pic/grey.png", data)
     # cv2.imwrite("./pic/zero-one.png", data01 * 255)
@@ -98,6 +99,29 @@ def main():
         cv2.imwrite("./pic/pB_{}.png".format(idx), B * 255 * p)
         cv2.imwrite("./pic/res_{}.png".format(idx), ((newdata + data01) * 255 - data)/p)
         cv2.imwrite("./pic/pres_{}.png".format(idx), (newdata + data01) * 255 - data)
+        # print ((newdata + data01) * 255 - data).max()
+        print "{}: 恢复后数据与原始数据差异最大的元素的值:{}".format(
+            idx, (cv2.imread("./pic/rec_{}.png".format(idx))[:, :, 0]-data).max())
+        idx += 1
+
+def recmatrix2(data):
+    w, h = data.shape
+    Cks = []
+    newdata = np.zeros((w, h))
+    for i in range(8):
+        tmpdata = np.zeros((w, h))
+        for (idx, idy), d in np.ndenumerate(data):
+            tmpdata[idx, idy] = (d >> (7-i)) % 2
+        newdata += 2**(7-i)*tmpdata
+        # print newdata
+        yield 1, newdata
+
+def main1():
+    data = np.loadtxt("greydata.txt", delimiter=",", dtype=int)
+    idx = 1
+    for p, newdata in recmatrix2(data):
+        cv2.imwrite("./pic2/rec_{}.png".format(idx), newdata)
+        print("diff: {}".format(abs(newdata-data).max()))
         idx += 1
 if __name__ == '__main__':
-    main()
+    main1()
