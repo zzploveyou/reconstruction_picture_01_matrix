@@ -68,25 +68,21 @@ def splitdata(data):
 def recmatrix(data, TICK):
     """将矩阵分解为一系列01矩阵，并通过01矩阵的加权和恢复原始矩阵"""
     w, h = data.shape
-    res = []
+    Aks = []
     newdata = np.zeros((w, h))
     tick = 0
     r = data.copy()
     while tick != TICK:
         z1, z2, r = splitdata(r)
-        res.append(z1)
-        res.append(z2)
+        Aks.append(z1)
+        Aks.append(z2)
         tick += 1
-    for idx, d in enumerate(res):
-        # print "scale of 0-1 matrix: {}/{}, 1 rate:{}".format(1, 2**(idx/2+1),
-            # sum(d[d==1])/d.size)
+    for idx in range(len(Aks)):
         if idx % 2 == 0:
-            newdata += (1.0 / 2**(idx / 2 + 1)) * d
-        else:
-            newdata -= (1.0 / 2**(idx / 2 + 1)) * d
-    # print ("有 {} 个01矩阵".format(len(res)))
-    return newdata
-
+            p = (1.0 / 2**(idx / 2 + 1))
+            B = Aks[idx] - Aks[idx+1]
+            newdata += p * B
+            yield p, B, newdata
 
 def main():
     data = np.loadtxt("greydata.txt", delimiter=",")
@@ -94,10 +90,14 @@ def main():
     # cv2.imwrite("./pic/grey.png", data)
     # cv2.imwrite("./pic/zero-one.png", data01 * 255)
     # cv2.imwrite("./pic/residualdata.png", resdata * 255)
-    for TICK in range(8):
-        newdata = recmatrix(resdata, TICK=TICK)
+    idx = 1
+    for p, B, newdata in recmatrix(resdata, TICK=16):
         # print "误差最大是: {}".format(np.max(np.abs(newdata - resdata)))
-        cv2.imwrite("./pic/{}_rec.png".format(TICK), (newdata + data01) * 255)
-        cv2.imwrite("./pic/{}_diff.png".format(TICK), (newdata + data01) * 255 - data)
+        cv2.imwrite("./pic/rec_{}.png".format(idx), (newdata + data01) * 255)
+        cv2.imwrite("./pic/B_{}.png".format(idx), B * 255)
+        cv2.imwrite("./pic/pB_{}.png".format(idx), B * 255 * p)
+        cv2.imwrite("./pic/res_{}.png".format(idx), ((newdata + data01) * 255 - data)/p)
+        cv2.imwrite("./pic/pres_{}.png".format(idx), (newdata + data01) * 255 - data)
+        idx += 1
 if __name__ == '__main__':
     main()
