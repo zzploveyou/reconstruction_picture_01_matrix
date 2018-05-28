@@ -75,33 +75,32 @@ def recmatrix(data, TICK):
         z1, z2, r = splitdata(r)
         Aks.append(z1)
         Aks.append(z2)
-
         tick += 1
     for idx in range(len(Aks)):
         if idx % 2 == 0:
             p = (1.0 / 2**(idx / 2 + 1))
             B = Aks[idx] - Aks[idx+1]
             newdata += p * B
-            print(B.min())
             yield p, B, newdata
 
 def main0():
-    data = np.loadtxt("greydata.txt", delimiter=",", dtype=np.int8)
-    data01, resdata = getres(data / 255)
-    # cv2.imwrite("./pic/grey.png", data)
-    # cv2.imwrite("./pic/zero-one.png", data01 * 255)
-    # cv2.imwrite("./pic/residualdata.png", resdata * 255)
+    data = np.loadtxt("greydata.txt", delimiter=",", dtype=np.uint8)
+    data01, resdata = getres(data / 255.0)
+    cv2.imwrite("./pic/grey.png", data)
+    cv2.imwrite("./pic/zero-one.png", data01 * 255)
+    cv2.imwrite("./pic/residualdata.png", resdata * 255)
     idx = 1
-    for p, B, newdata in recmatrix(resdata, TICK=16):
+    for p, B, newdata in recmatrix(resdata, TICK=10):
         # print "误差最大是: {}".format(np.max(np.abs(newdata - resdata)))
         cv2.imwrite("./pic/rec_{}.png".format(idx), (newdata + data01) * 255)
         cv2.imwrite("./pic/B_{}.png".format(idx), B * 255)
         cv2.imwrite("./pic/pB_{}.png".format(idx), B * 255 * p)
-        cv2.imwrite("./pic/res_{}.png".format(idx), ((newdata + data01) * 255 - data)/p)
-        cv2.imwrite("./pic/pres_{}.png".format(idx), (newdata + data01) * 255 - data)
+        cv2.imwrite("./pic/res_{}.png".format(idx+1), ((newdata + data01) * 255 - data)/p)
+        cv2.imwrite("./pic/pres_{}.png".format(idx+1), (newdata + data01) * 255 - data)
+        print (((newdata + data01) * 255 - data)/p)[0, 0]/255
         # print ((newdata + data01) * 255 - data).max()
-        print "{}: 恢复后数据与原始数据差异最大的元素的值:{}".format(
-            idx, (cv2.imread("./pic/rec_{}.png".format(idx))[:, :, 0]-data).max())
+        # print "{}: 恢复后数据与原始数据差异最大的元素的值:{}".format(
+        #     idx, (cv2.imread("./pic/rec_{}.png".format(idx))[:, :, 0]-data).max())
         idx += 1
 
 def recmatrix2(data):
@@ -112,16 +111,19 @@ def recmatrix2(data):
         tmpdata = np.zeros((w, h))
         for (idx, idy), d in np.ndenumerate(data):
             tmpdata[idx, idy] = (d >> (7-i)) % 2
-        newdata += 2**(7-i)*tmpdata
-        # print newdata
-        yield 1, newdata
+        tmpdata = 2**(7-i)*tmpdata
+        newdata += tmpdata
+        # yield tmpdata*2**(i+1), newdata
+        yield tmpdata, newdata
 
 def main1():
-    data = np.loadtxt("greydata.txt", delimiter=",", dtype=int)
+    data = np.loadtxt("greydata.txt", delimiter=",", dtype=np.uint8)
     idx = 1
-    for p, newdata in recmatrix2(data):
+    for tmpdata, newdata in recmatrix2(data):
+        cv2.imwrite("./pic2/each0_{}.png".format(idx), tmpdata)
         cv2.imwrite("./pic2/rec_{}.png".format(idx), newdata)
         print("diff: {}".format(abs(newdata-data).max()))
         idx += 1
 if __name__ == '__main__':
+    # main0()
     main1()
